@@ -1,0 +1,176 @@
+#!/usr/bin/python
+
+from popoto import popoto
+try:
+    import cmd as cmd2
+
+except:
+    import cmd as cmd2
+
+import sys
+import time
+import os
+from subprocess import check_output
+import subprocess
+import logging
+import string
+import datetime
+from select import select
+import logging.handlers
+import json
+import socket
+import fcntl
+import struct
+import threading
+import queue
+
+import default_shell
+
+class pshell(default_shell.default_shell):
+    def __init__(self):
+        default_shell.default_shell.__init__(self)
+        self.customshellEnabled=False
+        self.intro="""
+
+                                       dem_P    
+                                  ot_Modem    
+                               opotoModem      
+                             _PopotoModem_     
+                    potoModem_PopotoModem_popot  
+                m_PopotoModem_PopotoModem_popoto_ 
+             odem_PopotoModem_PopotoModem_PopotoModem        
+            Modem_PopotoModem_PopotoModem_PopotoModem_pop     
+          toModem_PopotoModem_PopotoModem_PopotoModem_popot   
+        potoModem_PopotoModem_PopotoModem_PopotoModem_PopotoM
+       opotoModem_PopotoModem_PopotoModem_PopotoModem_PopotoMo 
+      PopotoModem_PopotoModem                     dem_PopotoMode         
+      PopotoModem_PopotoModem_Popoto                   opotoModem        
+       opotoModem_PopotoModem_Popot                          Modem_      
+       opotoModem_                                              em_PopotoM
+      Popot                                                       _PopotoMode
+     _Po                                                           PopotoModem 
+                                                                    o        
+                                                                     Po
+                     Welcome to the Popoto modem Shell!
+
+                          Communicating Naturally
+"""
+
+        #for storing previous prompt
+        self.originalprompt = ''
+        #storing previous verbosity
+        self.previousverbosity=3
+
+        #This is the prompt of the custom shell, currently set to nothing
+        self.customprompt='Custom->'
+
+    def precmd(self, line):
+        #precmd preprocesses the entered command before the cmd loop calls the apropriate function
+        try:
+            if(len(line) > 0):
+                line =  default_shell.default_shell.processVariableSetGetCmd(self, line)
+        except Exception as e:
+            print (e)
+            print ("Could not parse precmd" )
+        if (self.customshellEnabled):
+            try:
+                #if custom shell mode and the first char is '$' or '!' prepend the transmit command
+                if (line[0]=='?')or(line[0]=='^'):
+                    return "transmit "+line
+            except:
+                #otherwise no modification neccessary
+                pass
+        return line
+        
+    def do_customshell(self,line):
+        """
+        Quiets the output
+        transmits lines that begin with '?' or '^'
+        remote IDs print within [0-255] upon reception i.e. '[10]$PSCAS,100,22.2,2,1,2 ,-2,P,0*88
+        accepts all pshell commands
+        """
+
+        #toggleing between custom shell enabled and disabled
+        self.customshellEnabled=not self.customshellEnabled
+
+        #if enabled store pshell state values and spin up a parsing thread for Custom shell
+        if self.customshellEnabled:
+            #storing original prompt
+            self.originalprompt = self.prompt
+            #storing previous verbosity level
+            self.previousverbosity=self.popoto.verbose
+
+            self.popoto.drainReplyQquiet()
+
+            #custom prompt is empty so this acts to mute the prompt for the Custom shell
+            self.prompt = self.customprompt
+            
+            #muting all messages
+            self.popoto.verbose=0;
+            #starting customshell response parsing loop in background
+            self.ParseCustomThread = threading.Thread(target=self.customParsingLoop, name="POLARParsingLoop")
+            self.ParseCustomThread.start();
+        else:
+            #resetting the verbosity to its previous level along with the prompt
+            self.prompt = self.originalprompt
+            self.popoto.verbose = self.previousverbosity
+
+    def customParsingLoop(self,line=None):
+        
+        #loop to parse and process until custom shell is disabled
+        while(self.customshellEnabled ==True):
+            try:
+                Reply = self.popoto.replyQ.get()
+                now = datetime.datetime.now();
+                if("Header" in Reply):
+                    #print the BoardId of the sender in brackets [0-255]
+                    print('['+str((Reply["Header"])[1])+']',end='')
+                elif "Data" in Reply:
+                    Data = Reply["Data"]
+                    #print each character
+                    for d in Data:
+                        print("{0:c}".format(d), end="")
+                    #then end with a newline
+                    print("")
+                elif "Alert" in Reply:
+                    if(Reply["Alert"] == "CRCError"):
+                        print ("CRCerror")
+            except:
+                #let the thread sleep if no action needed
+                time.sleep(.1)
+
+
+
+
+if __name__ == '__main__':
+
+
+    ps = pshell()
+    connected = False
+    '''
+    while connected == False:
+        try:
+            ps.onecmd('connect localhost 17000')
+            connected = True
+            ps.prompt = "Popoto-> "
+            ps.onecmd('startrx')
+        except:
+            time.sleep(.1)
+    '''
+    if(len(sys.argv) > 1):
+        for c in sys.argv[1:]:
+            ps.onecmd(c)
+
+
+
+
+    done =0
+    while(done == 0):
+        try:
+
+            ps.cmdloop()
+            done = 1
+        except:
+            print("Invalid Input {}".format(sys.exc_info()[0] ))
+            ps.intro = ""
+
