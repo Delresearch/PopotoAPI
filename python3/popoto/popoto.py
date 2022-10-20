@@ -61,7 +61,7 @@ class popoto:
         self.recByteCount = 0
         self.ip = ip
         self.is_running = True
-        self.fp = None;
+        self.fp = None
         self.fileLock = threading.Lock()
         self.logger.info("Starting Command Thread")
         self.rxThread = threading.Thread(target=self.RxCmdLoop, name="CmdRxLoop")
@@ -97,7 +97,7 @@ class popoto:
         :param      message:  The message contains a Popoto command with optional arguments
         :type       message:  string
         """
-        args =message.split(' ',1)
+        args = message.split(' ', 1)
 
 
         # Break up the command and optional arguements around the space
@@ -119,7 +119,7 @@ class popoto:
         
 
         # Build the JSON message
-        message = "{ \"Command\": \"" + command + "\", \"Arguments\": \""+arguments + "\"}"
+        message = "{ \"Command\": \"" + command + "\", \"Arguments\": \"" + arguments + "\"}"
         if(self.verbose > 0):
             print(message)
         # Send the message to the command socket
@@ -146,7 +146,7 @@ class popoto:
             channels.  The RemoteNode variable controls which modem to send the command to
 
         '''
-        self.isRemoteCmd = True;
+        self.isRemoteCmd = True
         if(AckFlag):
             self.remoteCommandAck = True
         else:
@@ -188,7 +188,7 @@ class popoto:
         except: 
             reply = {"Timeout":0}
         return reply
-    def waitForSpecificReply(self,Msgtype, value, Timeout=10):
+    def waitForSpecificReply(self, Msgtype, value, Timeout=10):
         """
         waitForReply is a method that blocks on the replyQ until either a reply has been
         received or a timeout (in seconds) occurs.

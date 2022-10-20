@@ -168,14 +168,9 @@ class default_shell(cmd2.Cmd):
                 1) a directory name 
                 2) a regular expression to match for the files to list. 
 
-                    Invocation:
-            connect <ipaddress> <port>
-        Examples:
-            connect localhost 17000 
-            connect 10.0.0.232 17000
-            print a directory listing
-
+        Invocation:
             ls <directory name>  <regex>
+        Examples:
             ls /captures
             ls . *.rec
 
