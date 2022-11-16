@@ -57,7 +57,6 @@ class popoto:
         self.verbose = 2 
         self.SampFreq = 102400        
         self.pcmplaysocket = 0
-        self.pcmplaysocket = 0
         self.recByteCount = 0
         self.ip = ip
         self.is_running = True
@@ -65,7 +64,7 @@ class popoto:
         self.fileLock = threading.Lock()
         self.logger.info("Starting Command Thread")
         self.rxThread = threading.Thread(target=self.RxCmdLoop, name="CmdRxLoop")
-        self.rxThread.start();
+        self.rxThread.start()
         self.replyQ = queue.Queue()
         self.datasocket = None
         self.logger.info("Starting pcmThread")
@@ -78,11 +77,11 @@ class popoto:
         self.getAllParameters()
         self.remoteCommandHandler = None
         self.CurrentCommandRemote = False
-        
+        self.MapPayloadModesToRates=[80,5120,2560,1280,640,10240]
 
-    def setRawTerminal():
+    def setRawTerminal(self):
         self.rawTerminal = True
-    def setANSITerminal():
+    def setANSITerminal(self):
         self.rawTerminal = False
 
     def setRemoteCommandHandler(self, obj):
@@ -134,7 +133,7 @@ class popoto:
             
     def sendRemoteStatus(self, message):
         status = "RemoteStatus "+ message
-        self.drainReplyQ();
+        self.drainReplyQ()
 
         self.send(status)
 
@@ -196,7 +195,7 @@ class popoto:
         :param      Timeout:  The timeout 
         :type       Timeout:  { type_description }
         """
-        done = 0; 
+        done = 0
         start = time.time()
         try:
             while (done == 0 ):
@@ -205,6 +204,9 @@ class popoto:
                     if(value != None):
                         if(reply[Msgtype] == value):
                             done =1
+                        elif type(reply[Msgtype]) == str:
+                            if(value in reply[Msgtype]):
+                                done = 1 
                     else:
                         done = 1
                 elapsedTime = time.time() - start
@@ -282,6 +284,10 @@ class popoto:
                                 files with autonaming.  Typical value is 60 for 1 minute files.
         :type       duration:  number
         """
+
+        if filename[:10] != '/captures/' and os.path.exists("/captures"):
+            filename = '/captures/' + filename
+            print("File recording in /captures/ directory: " + filename)
         self.send('StartRecording {} {}'.format(filename, duration))
 
     def recordStopTarget(self):
@@ -302,6 +308,9 @@ class popoto:
                                 higher transmit power.
         :type       scale:     number
         """
+        if filename[:10] != '/captures/' and os.path.exists("/captures"):
+            filename = '/captures/' + filename
+            print("File playing from /captures/ directory: " + filename)
         print ("Playing {} at Scale {}".format(filename, scale))    
         self.send('StartPlaying {} {}'.format(filename, scale))
     
@@ -384,8 +393,8 @@ class popoto:
 
         """
         done=0
-        self.getVersion();
-        self.is_running =0
+        self.getVersion()
+        self.is_running = False
         time.sleep(1)
 
     def setRtc(self, clockstr):
@@ -411,20 +420,19 @@ class popoto:
 
     def __del__(self):
         # Destructor
-        done = 0;
+        done = 0
 
         # Read all data out of socket
-        self.is_running =0
+        self.is_running = False
 
 
-    def playPcmLoop(self, inFile,scale, bb):
+    def playPcmLoop(self, inFile, scale, bb):
         """
         playPcmLoop 
         Play passband/baseband rec file (Note file must be at least 4 seconds long)  
         :param      inFile:  In file
         :type       inFile:  string
-        :param      bb:      selects passband or baseband data
-        :type       bb:      number 0/1 for pass/base
+        :param      bb:      selects passband (0) or baseband (1) data
         """
         self.pcmplaysocket=socket(AF_INET, SOCK_STREAM)
         self.pcmplaysocket.connect((self.ip, self.pcmplayport))
@@ -457,7 +465,7 @@ class popoto:
         else:
             print('Playing a raw file')
             readLen = 640*4
-            startOffset = 0; 
+            startOffset = 0
 
         Done = 0
         while Done == 0:
@@ -478,7 +486,7 @@ class popoto:
                     print(sys.exc_info()[0])
                     Done = 1
         
-        duration = sampleCounter / (4*SampPerSec);  #  Bytes to Floats->seconds
+        duration = sampleCounter / (4*SampPerSec)  #  Bytes to Floats->seconds
         print('Duration {}'.format(duration))
 
         while(time.time() < s_time+duration):
@@ -519,9 +527,9 @@ class popoto:
         # Set mode to either passband-0 or baseband-1
         self.setValueI('RecordMode', bb)
         if(bb == 1):
-            duration = duration * 10240 *2   # Baseband rate 10240 Cplx samples /sec
+            duration = duration * 10240 * 2   # Baseband rate 10240 Cplx samples /sec
         else:
-            duration = duration *102400
+            duration = duration * 102400
 
     
         if(self.pcmplaysocket == None):
@@ -541,13 +549,13 @@ class popoto:
         while Done == 0:
             # Read socket
             try:
-                fromRx=self.pcmplaysocket.recv(642*4); # Read the socket
+                fromRx=self.pcmplaysocket.recv(642*4) # Read the socket
                 if fpout != None:
                     fpout.write(fromRx)     # write the data
-                self.recByteCount = self.recByteCount + len(fromRx)-2;
+                self.recByteCount = self.recByteCount + len(fromRx)-2
                 if (self.recByteCount >= duration*4):
                     Done=1
-                FrameCounter = FrameCounter +1
+                FrameCounter = FrameCounter + 1
                 if FrameCounter > 80:
                     print('.')
                     FrameCounter = 0
@@ -568,7 +576,7 @@ class popoto:
         else:
             print(line)
       
-    def streamUpload(self, filename, power):
+    def streamUpload(self, filename, power, PayloadMode =1):
         """
         streamUpload Upload a file for acoustic transmission
         
@@ -618,7 +626,7 @@ class popoto:
         self.setValueI('ConsolePacketBytes', 256)
         self.setValueI('ConsoleTimeoutMS', 100)
         self.setValueI('StreamingTxLen', sFrame)
-        self.setValueI('PayloadMode', 1)
+        self.setValueI('PayloadMode', PayloadMode)
         self.setValueF('TxPowerWatts', power)
    
         done = 0
@@ -636,25 +644,28 @@ class popoto:
         sent=0
         self.drainReplyQquiet()
         
-        with open(filename) as f:
-            PacketsTransmitted = 0; 
+        with open(filename,'rb') as f:
+            PacketsTransmitted = 0
             while(bytesUploaded < nbytes):
                 sFrameSent = 0
-
+                print ("Bytes Uploaded {}  nbytes {}".format(bytesUploaded, nbytes))
                 while(sFrameSent < sFrame):
+                    print ("SFrameSent {}  sFrame {}".format(sFrameSent, sFrame))
                     readLen = sFrame-sFrameSent
                     if(readLen > 256):
                         readLen = 256
                     fileChars = f.read(readLen)
+
                     Msg['Payload']["Data"] = list(fileChars)
+                    '''
                     for i in range(0, len(Msg['Payload']['Data'])):
                         Msg['Payload']['Data'][i] = ord(Msg['Payload']['Data'][i])
-
+                    '''
                     jmsg = json.dumps(Msg)
                     #print(jmsg)
                     try:
                         self.transmitJSON(jmsg)
-                        #count=self.datasocket.send(fileChars);
+                        #count=self.datasocket.send(fileChars)
                     except:
                         print("ERROR SENDING ON  DATA SOCKET")
                     bytesUploaded += len(fileChars)
@@ -665,11 +676,14 @@ class popoto:
                 
                 if((nbytes - bytesUploaded) < sFrame):
                     sFrame = nbytes-bytesUploaded
-
-
-            while(PacketsTransmitted > 0):
-                repl = self.waitForSpecificReply("Alert",'TxComplete', 30)
-                PacketsTransmitted = PacketsTransmitted - 1; 
+        # Compute the number of seconds to wait for a Complete message
+        # Based on the payload mode.  Up it by factor of 10 to account
+        # for headers etc, and the "timeout" nature of a timeout.  
+        # in the normal case we won't wait this long, as the complete message
+        # will arrive. 
+        timeout = 10*(nbytes * 8) / self.payLoadModeToBitRate(PayloadMode) 
+        timeout
+        repl = self.waitForSpecificReply("Alert",'TxComplete', timeout)
             
 
         print("Upload Complete")
@@ -711,7 +725,7 @@ class popoto:
             self.setLocalCommand()
     
             if(repl['RemoteStatus'] != "OK"):
-                print('Remote ERROR:', end = "")
+                print('Remote ERROR:')
                 print (repl)
                 return
             # Set Local
@@ -723,7 +737,7 @@ class popoto:
         #check for proper response
         f = open(filename+'.download', 'wb')
         filedone =0
-        TimeoutSec = 10
+        TimeoutSec = 30
         while(filedone == 0):
             repl = self.waitForSpecificReply("Header",None, TimeoutSec)
             if('Timeout' in repl):
@@ -759,7 +773,29 @@ class popoto:
         #write byte array to disk
 
 
-
+    def payLoadModeToBitRate(self, payloadMode):
+        '''
+            Returns the bitrate of the selected payload mode
+        '''
+        try:
+            rate = self.MapPayloadModesToRates[payloadMode]
+        except:
+            self.logger.error("Invalid payloadMode")
+            rate = self.MapPayloadModesToRates[0]
+       
+        return rate
+    
+    def BitRateToPayloadMode(self, rate):
+        '''
+            Returns the bitrate of the selected payload mode
+        '''
+        try:
+            PayloadMode = self.MapPayloadModesToRates.index(rate)
+        except:
+            self.logger.error("Invalid Rate")
+            PayloadMode = 0
+       
+        return PayloadMode
 
     def getParametersList(self):
         """
@@ -824,7 +860,7 @@ class popoto:
         """
         Gets all Popoto control element info strings for all elements.
         """
-        idx = 0;
+        idx = 0
 
         # if we already have a parameter list file,  load and parse it. 
         if (os.path.exists('ParamsList.txt')):
@@ -879,19 +915,19 @@ class popoto:
         errorcount = 0
         rxString = ''
         self.cmdsocket.settimeout(1)
-        while(self.is_running ==True):
+        while(self.is_running == True):
             try:
                 data = self.cmdsocket.recv(1)
                 if(len(data) >= 1):
 
                     if ord(data)  != 13:
-                        rxString = rxString+str(data,'utf-8');
+                        rxString = rxString+str(data,'utf-8')
                      
                     else:
                         
                         idx = rxString.find("{")
                         msgType = rxString[0:idx]
-                        msgType = msgType.strip();
+                        msgType = msgType.strip()
 
 
                         jsonData = str(rxString[idx:len(rxString)])
@@ -950,7 +986,7 @@ class popoto:
 
 
     def dispMips(self, mips):
-        v = {};
+        v = {}
         print('Name                            |       min  |        max |     total  |      count |    average |  peak mips | avg mips')
         for module in mips:
             v = mips[module]
