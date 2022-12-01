@@ -17,8 +17,8 @@
 volatile int TxModeEnabled = 0;
 void PlayRecModemTest( string filename, int mode, int numTests);
 
-volatile FILE *fpOut0=NULL;
-volatile FILE *fpOut1=NULL;
+FILE *fpOut0=NULL;
+FILE *fpOut1=NULL;
 
 volatile int pegCount = 0;
 volatile float Eng;

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # set the project name
 project(popoto_play_rec_test)
-
+add_compile_options("-g")
 # build the API library
 add_library(popoto_api  STATIC src/popoto_client.cpp src/TCPClient.cpp)
 

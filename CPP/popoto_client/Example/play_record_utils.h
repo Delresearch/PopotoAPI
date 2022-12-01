@@ -17,8 +17,8 @@ enum
     FAILURE
 };
 
-int StartRecord(popoto_client *popoto, volatile FILE **fp, string filename, int Mode);
-int StopRecord(popoto_client *popoto, volatile FILE **fp, int Mode);
+int StartRecord(popoto_client *popoto,  FILE **fp, string filename, int Mode);
+int StopRecord(popoto_client *popoto,  FILE **fp, int Mode);
 int StartPlay(popoto_client *popoto, string filename, float Gain, int Mode);
 
 
