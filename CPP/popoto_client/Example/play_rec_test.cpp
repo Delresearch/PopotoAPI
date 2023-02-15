@@ -89,7 +89,7 @@ int main(int argc, const char *argv[])
     
     if (argc < 7)
     {
-        printf("Use:  %s <ip address Modem 1>  <port address Modem1>  <ip address Modem2>  <port address Modem2>  <gain>  <temporary PCM filename>\n", argv[0]);
+        printf("Use:  %s <ip address Modem 1>  <port address Modem1>  <ip address Modem2>  <port address Modem2>  <gain>  <temporary WAV filename>\n", argv[0]);
         exit(-1);
     }
     host0 = argv[1];
