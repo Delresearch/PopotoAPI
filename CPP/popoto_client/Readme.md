@@ -80,7 +80,7 @@ This test requires the modems be configured to transmit to a RemoteID of 255 (or
 
 From the build directory, execute
 
-`./popoto_play_rec_test <ip address Modem 1>  <port address Modem1>  <ip address Modem2>  <port address Modem2>  <Playback Gain>  <temporary PCM filename>`
+`./popoto_play_rec_test <ip address Modem 1>  <port address Modem1>  <ip address Modem2>  <port address Modem2>  <Playback Gain>  <temporary WAV filename>`
 
 #### ip Address Modem 1 
 To obtain the ip Address of your modem, from the `pshell`   execute `getIP`
