@@ -6,7 +6,7 @@ classdef popoto < handle
     %   the baseport+1
     
     %   PCM can be recorded on the pcmlog port at the baseport+2
-    %   PCM A/D D/A data is stramed on the pcmio port at the baseport +3
+    %   PCM A/D D/A data is streamed on the pcmio port at the baseport +3
     %   This class contains many methods for communicating with the popoto
     %   modem.
     
